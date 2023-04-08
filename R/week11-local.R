@@ -128,10 +128,6 @@ time_parallel_ols <- system.time({
 }
 )
 
-hocv_cor_ols <- cor(
-  predict(model_ols, gss_test_tbl, na.action=na.pass),
-  gss_test_tbl$workhours
-) ^ 2
 
 # Time to run non-parallel elastic net model
 time_parallel_glmnet <- system.time({
@@ -147,10 +143,6 @@ time_parallel_glmnet <- system.time({
 }
 )
 
-hocv_cor_glmnet <- cor(
-  predict(model_glmnet, gss_test_tbl, na.action=na.pass),
-  gss_test_tbl$workhours
-) ^ 2
 
 # Time to run non-parallel random forest model
 time_parallel_rf <- system.time({
@@ -166,11 +158,6 @@ time_parallel_rf <- system.time({
 }
 )
 
-hocv_cor_rf <- cor(
-  predict(model_rf, gss_test_tbl, na.action=na.pass),
-  gss_test_tbl$workhours
-) ^ 2
-
 # Time to run non-parallel XGBoost model
 time_parallel_xgb <- system.time({
   model_xgb <- train(
@@ -184,6 +171,10 @@ time_parallel_xgb <- system.time({
   )
 }
 )
+
+# Turn off parallel processing
+stopCluster(local_cluster)
+registerDoSEQ()
 
 resample_sum <- summary(resamples(list(model_ols, model_glmnet, model_rf, model_xgb)))
 
@@ -211,5 +202,9 @@ table2_tbl <- data.frame(
   parallelized = c(time_parallel_ols[3], time_parallel_glmnet[3], time_parallel_rf[3], time_parallel_xgb[3])
 )
 table2_tbl
+
+# glmnet benefited the most from parallelization because its execution time when running parallel model decreased the most (66%), followed by XGBoost model (48%), and random forest model (14%)
+# Difference between fastest (glmnet) and slowest (XGBoost) model paralleled model is seconds. This could be due to complexity of XGBoost model (accounting for non-linear relationship).
+# I would pick random forest model for their high hold-out R square and reasonable computing cost (when compared to more complex model such as XGBoost)
 
 
