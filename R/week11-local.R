@@ -204,4 +204,12 @@ table1_tbl <- tibble(
 
 table1_tbl
 
+# Running time
+table2_tbl <- data.frame(
+  algo = c("lm","glmnet","ranger","xgbTree"),
+  original = c(time_non_parallel_ols[3], time_non_parallel_glmnet[3], time_non_parallel_rf[3], time_non_parallel_xgb[3]),
+  parallelized = c(time_parallel_ols[3], time_parallel_glmnet[3], time_parallel_rf[3], time_parallel_xgb[3])
+)
+table2_tbl
+
 
