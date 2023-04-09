@@ -1,14 +1,13 @@
 # Script Settings and Resources
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 library(tidyverse)
 library(haven)
+library(foreach)
 library(caret)
-library(tictoc)
 library(parallel)
 library(doParallel)
 
 # Data Import and Cleaning
-gss_import_tbl <- read_sav("../data/GSS2016.sav") %>%
+gss_import_tbl <- read_sav("GSS2016.sav") %>%
   filter(!is.na(MOSTHRS)) %>% 
   select(-c(HRS1, HRS2))
 gss_tbl <- 
@@ -105,7 +104,7 @@ hocv_cor_xgb <- cor(
 ) ^ 2
 
 
-local_cluster <- makeCluster(7)
+local_cluster <- makeCluster(128)
 registerDoParallel(local_cluster)
 
 time_parallel_ols <- system.time({
@@ -173,8 +172,38 @@ time_parallel_xgb <- system.time({
   )
 }
 )
+# Turn off parallel processing
+stopCluster(local_cluster)
+registerDoSEQ()
+
 
 resample_sum <- summary(resamples(list(model_ols, model_glmnet, model_rf, model_xgb)))
 
 
 # Publication
+table3_tbl <- tibble(
+  algo = c("lm","glmnet","ranger","xgbTree"),
+  cv_rsq = str_remove(round(
+    resample_sum$statistics$Rsquared[,"Mean"],2
+  ),"^0"),
+  ho_rsq = str_remove(c(
+    format(round(hocv_cor_ols,2),nsmall=2),
+    format(round(hocv_cor_glmnet,2),nsmall=2),
+    format(round(hocv_cor_rf,2),nsmall=2),
+    format(round(hocv_cor_xgb,2),nsmall=2)
+  ),"^0")
+) %>% 
+  write_csv("table3.csv")
+
+table3_tbl
+
+# Running time
+table4_tbl <- data.frame(
+  algo = c("lm","glmnet","ranger","xgbTree"),
+  supercomputer = c(time_non_parallel_ols[3], time_non_parallel_glmnet[3], time_non_parallel_rf[3], time_non_parallel_xgb[3]),
+  `supercomputer-128` = c(time_parallel_ols[3], time_parallel_glmnet[3], time_parallel_rf[3], time_parallel_xgb[3])
+) %>% 
+  write_csv("table4.csv")
+
+table4_tbl
+
