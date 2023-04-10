@@ -3,7 +3,6 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 library(tidyverse)
 library(haven)
 library(caret)
-library(tictoc)
 library(parallel)
 library(doParallel)
 
@@ -203,8 +202,8 @@ table2_tbl <- data.frame(
 )
 table2_tbl
 
-# glmnet benefited the most from parallelization because its execution time when running parallel model decreased the most (66%), followed by XGBoost model (48%), and random forest model (14%)
-# Difference between fastest (glmnet) and slowest (XGBoost) model paralleled model is seconds. This could be due to complexity of XGBoost model (accounting for non-linear relationship).
+# glmnet benefited the most from parallelization. Its execution time when running parallel model decreased the most (66%), followed by XGBoost model (48%), and random forest model (14%). The way that XGBoost and random forest are built allows them to take advantage of parallelization (multiple trees can be built in parallel). On the other hand, OLS regression and elastic net are linear models and based on more sequential processes which are not easy to be paralleled. However, some characteristics of the data set might have been optimal for speeding up elastic net model.
+# Difference between fastest (glmnet) and slowest (XGBoost) model paralleled model is 146 seconds. This could be due to complexity of XGBoost model (accounting for non-linear relationship).
 # I would pick random forest model for their high hold-out R square and reasonable computing cost (when compared to more complex model such as XGBoost)
 
 
