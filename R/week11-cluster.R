@@ -15,10 +15,6 @@ gss_tbl <-
   rename(workhours = MOSTHRS) %>%
   mutate(workhours = as.integer(workhours))
 
-
-# Visualization
-ggplot(gss_tbl, aes(x=workhours)) + geom_histogram()
-
 # Analysis
 train_cases <- sample(1:nrow(gss_tbl), .75*nrow(gss_tbl))
 
@@ -103,8 +99,8 @@ hocv_cor_xgb <- cor(
   gss_test_tbl$workhours
 ) ^ 2
 
-
-local_cluster <- makeCluster(128)
+# Modify number of cores to run on MSI
+local_cluster <- makeCluster(64)
 registerDoParallel(local_cluster)
 
 time_parallel_ols <- system.time({
@@ -201,9 +197,13 @@ table3_tbl
 table4_tbl <- data.frame(
   algo = c("lm","glmnet","ranger","xgbTree"),
   supercomputer = c(time_non_parallel_ols[3], time_non_parallel_glmnet[3], time_non_parallel_rf[3], time_non_parallel_xgb[3]),
-  `supercomputer-128` = c(time_parallel_ols[3], time_parallel_glmnet[3], time_parallel_rf[3], time_parallel_xgb[3])
+  supercomputer_64 = c(time_parallel_ols[3], time_parallel_glmnet[3], time_parallel_rf[3], time_parallel_xgb[3])
 ) %>% 
   write_csv("table4.csv")
 
 table4_tbl
 
+# XGBoost benefited most from moving to the supercomputer. When comparing execution time for parallel models between supercomputer and local computer, running time for XGBoost decreased significantly (almost 95%), followed by random forest (88%). Due to the complexity of these models, having more CPU definitely will benefit with the execution time.
+# Running time decreases with the number of cores used for all models except OLS regression. This is especially true for complex models like random forest and XGBoost (having 64 cores in the MSI speeds up the process compared to 7 cores in local computer)
+
+# I would recommend using the supercomputer because it helps data analysis process becomes much more efficient compared to using local computer. We can run complex models such as random forest and XGBoost within seconds and with the same set up. 
